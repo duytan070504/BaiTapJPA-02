@@ -37,7 +37,13 @@
       <artifactId>jakarta.servlet.jsp.jstl</artifactId>
       <version>3.0.1</version>
     </dependency>
-    <!-- Hibernate (JPA) -->
+    <!--  SiteMesh 3 (layout)  -->
+	<dependency>
+	<groupId>org.sitemesh</groupId>
+	<artifactId>sitemesh</artifactId>
+	<version>3.2.1</version>
+	</dependency>
+        <!-- Hibernate (JPA) -->
     <dependency>
       <groupId>org.hibernate.orm</groupId>
       <artifactId>hibernate-core</artifactId>

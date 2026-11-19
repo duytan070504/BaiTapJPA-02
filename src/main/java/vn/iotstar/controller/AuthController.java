@@ -6,8 +6,10 @@ import jakarta.servlet.http.*;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import vn.iotstar.entity.User;
 import vn.iotstar.service.UserService;
+import vn.iotstar.util.FormValidator;
 import vn.iotstar.util.PasswordUtil;
 
 @WebServlet({ "/login", "/logout", "/register", "/verify-otp", "/resend-otp",
@@ -19,6 +21,12 @@ public class AuthController extends HttpServlet {
     private void view(HttpServletRequest req, HttpServletResponse resp, String name)
             throws ServletException, IOException {
         req.getRequestDispatcher("/WEB-INF/views/" + name + ".jsp").forward(req, resp);
+    }
+
+    private void invalid(HttpServletRequest req, HttpServletResponse resp, String page,
+            Map<String, String> errors) throws ServletException, IOException {
+        req.setAttribute("errors", errors);
+        view(req, resp, page);
     }
 
     @Override
@@ -61,7 +69,10 @@ public class AuthController extends HttpServlet {
             case "/login" -> {
                 String username = req.getParameter("username");
                 String password = req.getParameter("password");
-                User u = username == null ? null : us.findByUsername(username.trim());
+                Map<String, String> errors = FormValidator.login(username, password);
+                if (!errors.isEmpty()) { invalid(req, resp, "login", errors); return; }
+
+                User u = us.findByUsername(username.trim());
                 if (u == null || !PasswordUtil.check(password, u.getPassword())) {
                     req.setAttribute("error", "Sai tên đăng nhập hoặc mật khẩu");
                     view(req, resp, "login");
@@ -78,6 +89,11 @@ public class AuthController extends HttpServlet {
             }
             case "/register" -> {
                 String email = req.getParameter("email");
+                Map<String, String> errors = FormValidator.register(req.getParameter("username"),
+                        req.getParameter("fullname"), email, req.getParameter("phone"),
+                        req.getParameter("password"), req.getParameter("confirm"));
+                if (!errors.isEmpty()) { invalid(req, resp, "register", errors); return; }
+
                 String err = us.register(req.getParameter("username"), email,
                         req.getParameter("password"), req.getParameter("fullname"), req.getParameter("phone"));
                 if (err != null) {
@@ -90,9 +106,12 @@ public class AuthController extends HttpServlet {
             }
             case "/verify-otp" -> {
                 String email = req.getParameter("email");
+                req.setAttribute("email", email);
+                Map<String, String> errors = FormValidator.otp(req.getParameter("otp"));
+                if (!errors.isEmpty()) { invalid(req, resp, "verify-otp", errors); return; }
+
                 String err = us.verifyActivation(email, req.getParameter("otp"));
                 if (err != null) {
-                    req.setAttribute("email", email);
                     req.setAttribute("error", err);
                     view(req, resp, "verify-otp");
                 } else {
@@ -102,6 +121,9 @@ public class AuthController extends HttpServlet {
             }
             case "/forgot-password" -> {
                 String email = req.getParameter("email");
+                Map<String, String> errors = FormValidator.email(email);
+                if (!errors.isEmpty()) { invalid(req, resp, "forgot-password", errors); return; }
+
                 String err = us.startReset(email);
                 if (err != null) {
                     req.setAttribute("error", err);
@@ -113,9 +135,13 @@ public class AuthController extends HttpServlet {
             }
             case "/reset-password" -> {
                 String email = req.getParameter("email");
+                req.setAttribute("email", email);
+                Map<String, String> errors = FormValidator.reset(req.getParameter("otp"),
+                        req.getParameter("password"), req.getParameter("confirm"));
+                if (!errors.isEmpty()) { invalid(req, resp, "reset-password", errors); return; }
+
                 String err = us.resetPassword(email, req.getParameter("otp"), req.getParameter("password"));
                 if (err != null) {
-                    req.setAttribute("email", email);
                     req.setAttribute("error", err);
                     view(req, resp, "reset-password");
                 } else {

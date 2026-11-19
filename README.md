@@ -11,3 +11,7 @@
 /register /verify-otp /login /logout /forgot-password /reset-password
 /home (10 video mới nhất)   /video (video của user, 6/trang)   /watch?id= (chi tiết + play)
 /video/add|edit|delete      /admin/categories (CRUD category)
+
+## Bài 03
+- SiteMesh 3.2.1: `pom.xml`, `WEB-INF/web.xml` (filter), `WEB-INF/sitemesh3.xml`, `WEB-INF/decorators/{web,admin,login}.jsp`, `common/{web,admin}/...` (Bootstrap 5 qua CDN).
+- Validation (server + HTML5) cho login, register, forgot/reset password, verify OTP, category (insert/edit), video (insert/edit): `util/FormValidator.java`.

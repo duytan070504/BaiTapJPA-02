@@ -1,0 +1,15 @@
+<sitemesh>
+  <!-- layout mặc định cho toàn web -->
+  <mapping path="/*" name="web" decorator="web.jsp"/>
+  <!-- layout cho trang quản trị (Category) -->
+  <mapping path="/admin/*" name="admin" decorator="admin.jsp"/>
+  <!-- layout cho các trang đăng nhập / đăng ký / OTP / quên mật khẩu -->
+  <mapping path="/login" name="login" decorator="login.jsp"/>
+  <mapping path="/register" name="login" decorator="login.jsp"/>
+  <mapping path="/verify-otp" name="login" decorator="login.jsp"/>
+  <mapping path="/resend-otp" name="login" decorator="login.jsp"/>
+  <mapping path="/forgot-password" name="login" decorator="login.jsp"/>
+  <mapping path="/reset-password" name="login" decorator="login.jsp"/>
+  <!-- không decorate file ảnh/video -->
+  <mapping path="/image" exclude="true"/>
+</sitemesh>

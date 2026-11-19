@@ -5,15 +5,17 @@ import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import java.io.IOException;
+import java.util.Map;
 import vn.iotstar.entity.Category;
 import vn.iotstar.entity.User;
 import vn.iotstar.entity.Video;
 import vn.iotstar.service.CategoryService;
 import vn.iotstar.service.VideoService;
 import vn.iotstar.util.FileUtil;
+import vn.iotstar.util.FormValidator;
 import vn.iotstar.util.WebUtil;
 
-@MultipartConfig(maxFileSize = 1024L * 1024 * 500, maxRequestSize = 1024L * 1024 * 520)
+@MultipartConfig(fileSizeThreshold = 1024 * 1024 * 2, maxFileSize = -1L, maxRequestSize = -1L)
 @WebServlet({ "/video", "/video/add", "/video/insert", "/video/edit", "/video/update", "/video/delete" })
 public class VideoController extends HttpServlet {
     private static final long serialVersionUID = 1L;
@@ -81,16 +83,30 @@ public class VideoController extends HttpServlet {
         boolean active = req.getParameter("active") != null;
         int catId = WebUtil.parseInt(req.getParameter("categoryId"), 0);
         Category cat = catId > 0 ? cs.findById(catId) : null;
-        String poster = FileUtil.save(req.getPart("posterFile"));
-        String videoFile = FileUtil.save(req.getPart("videoFileUpload"));
+        Part posterPart = req.getPart("posterFile");
+        Part videoPart = req.getPart("videoFileUpload");
 
-        if (title == null || title.isBlank()) {
-            req.setAttribute("error", "Tiêu đề không được để trống");
-            if (path.equals("/video/update")) req.setAttribute("video", owned(req, u));
+        Map<String, String> errors = FormValidator.video(title, desc, posterPart, videoPart);
+        boolean isUpdate = path.equals("/video/update");
+
+        if (!errors.isEmpty()) {
+            if (isUpdate) {
+                Video v = owned(req, u);
+                if (v == null) { resp.sendRedirect(ctx + "/video"); return; }
+                v.setTitle(title);          // chỉ để hiển thị lại, không lưu DB
+                v.setDescription(desc);
+                v.setActive(active);
+                v.setCategory(cat);
+                req.setAttribute("video", v);
+            }
+            req.setAttribute("errors", errors);
             req.setAttribute("categories", cs.findAll());
             view(req, resp, "video-form");
             return;
         }
+
+        String poster = FileUtil.save(posterPart);
+        String videoFile = FileUtil.save(videoPart);
 
         if (path.equals("/video/insert")) {
             Video v = new Video();
@@ -102,9 +118,9 @@ public class VideoController extends HttpServlet {
             v.setVideoFile(videoFile);
             v.setUser(u);              // gắn video cho user đang đăng nhập (quan hệ 1-n)
             vs.insert(v);
-        } else if (path.equals("/video/update")) {
-            Video v = vs.findById(WebUtil.parseInt(req.getParameter("id"), 0));
-            if (v == null || v.getUser().getId() != u.getId()) { resp.sendRedirect(ctx + "/video"); return; }
+        } else if (isUpdate) {
+            Video v = owned(req, u);
+            if (v == null) { resp.sendRedirect(ctx + "/video"); return; }
             v.setTitle(title.trim());
             v.setDescription(desc);
             v.setActive(active);
